@@ -7,6 +7,9 @@ using Timer = System.Timers.Timer;
 using System.Diagnostics;
 using NAudio.Wave;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
 
 namespace AudioClientBeta
 {
@@ -17,6 +20,7 @@ namespace AudioClientBeta
         int currentYPosition;
         internal static iSpyServer MWS;
         public VolumeLevel OutVolumeLevel;
+        private static Socket sSocket;
 
         public objectsMicrophone Mic;
         string[] arguments = null;
@@ -132,9 +136,10 @@ namespace AudioClientBeta
                 {
                     ddlDevice.Add(WaveIn.GetCapabilities(n).ProductName);
                 }
-
-                MWS = new iSpyServer(this);
-                MWS.StartServer();
+                //MWS = new iSpyServer(this);
+                //MWS.Listening = true;
+                //MWS.RecordingFormat = new WaveFormat(8000, 16, 1);
+                //MWS.StartServer();
                 OutVolumeLevel = new VolumeLevel(Mic);
                 OutVolumeLevel.Listening = true;
                 OutVolumeLevel.Enable();
@@ -152,6 +157,9 @@ namespace AudioClientBeta
             }
         }
 
+
+        
+
         #region 计时器功能   
         private void SpeakTime_Elapsed(object sender, ElapsedEventArgs e)
         {
@@ -168,6 +176,7 @@ namespace AudioClientBeta
             else
             {
                 this.lb_Time.Text = value;
+                richTextBox1.Text += value;
             }
         }
         #endregion
@@ -220,7 +229,9 @@ namespace AudioClientBeta
 
         private void AudioClientBetaDemo_FormClosing(object sender, FormClosingEventArgs e)
         {
-            MWS.StopServer();
+            sSocket.Close();
+            sSocket = null;
+            //MWS.StopServer();
         }
     }
 }

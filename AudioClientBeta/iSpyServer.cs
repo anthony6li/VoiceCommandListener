@@ -9,29 +9,58 @@ using System.Net;
 using System.Threading;
 using NAudio.Wave;
 using g711audio;
+using NAudio.Wave.SampleProviders;
+using AudioClientBeta.Sources.Audio;
 
 namespace AudioClientBeta
 {
     public class iSpyServer
     {
-        private TcpListener myListener = null;
+        private static Socket sSocket;
         private AudioClientBetaDemo Parent;
         private Thread th = null;
+        private bool _listening;
         private static readonly List<Socket> MySockets = new List<Socket>();
-        private static int _socketindex;
+        private BufferedWaveProvider _waveProvider;
+        private SampleChannel _sampleChannel;
+        public IWavePlayer WaveOut;
+        public BufferedWaveProvider WaveOutProvider { get; set; }
+        public event DataAvailableEventHandler DataAvailable;
 
-        public bool Running
+
+        public WaveFormat RecordingFormat { get; set; }
+
+        public bool IsRunning => th != null && !th.Join(TimeSpan.Zero);
+       
+
+        public bool Listening
         {
             get
             {
-                if (th ==null)
+                if (IsRunning && _listening)
+                    return true;
+                return false;
+
+            }
+            set
+            {
+                if (RecordingFormat == null)
                 {
-                    return  false;
+                    _listening = false;
+                    return;
                 }
-                else
+
+                if (WaveOutProvider != null)
                 {
-                    return th.IsAlive;
+                    if (WaveOutProvider.BufferedBytes > 0) WaveOutProvider.ClearBuffer();
+                    WaveOutProvider = null;
                 }
+                if (value)
+                {
+                    WaveOutProvider = new BufferedWaveProvider(RecordingFormat) { DiscardOnBufferOverflow = true, BufferDuration = TimeSpan.FromMilliseconds(500) };
+                }
+
+                _listening = value;
             }
         }
 
@@ -44,8 +73,16 @@ namespace AudioClientBeta
         {
             try
             {
-                myListener = new TcpListener(IPAddress.Any, 8092) { ExclusiveAddressUse = false };
-                myListener.Start(200);
+                _waveProvider = new BufferedWaveProvider(RecordingFormat);
+                _sampleChannel = new SampleChannel(_waveProvider);
+                //_sampleChannel.PreVolumeMeter += SampleChannelPreVolumeMeter;
+
+
+                IPAddress ip = IPAddress.Parse("192.168.198.1");
+                int port = 8092;
+                sSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                sSocket.Bind(new IPEndPoint(ip, port));
+                sSocket.Listen(10);
                 if (th!=null)
                 {
                     while (th.ThreadState == ThreadState.AbortRequested)
@@ -54,6 +91,7 @@ namespace AudioClientBeta
                     }
                 }
                 th = new Thread(new ThreadStart(StartListen));
+                th.IsBackground = true;
                 th.Start();
             }
             catch (Exception e)
@@ -64,135 +102,62 @@ namespace AudioClientBeta
 
         public void StartListen()
         {
-            while (Running)
+            while (true)
             {
-                try
-                {
-                    Socket mySocket = myListener.AcceptSocket();
-                    if (MySockets.Count() < _socketindex + 1)
-                    {
-                        MySockets.Add(mySocket);
-                    }
-                    else
-                        MySockets[_socketindex] = mySocket;
-                    if (mySocket.Connected)
-                    {
-                        mySocket.NoDelay = true;
-                        mySocket.ReceiveBufferSize = 8192;
-                        mySocket.ReceiveTimeout = 1500;
-                        try
-                        {
-                            string sBuffer;
-                            string sHttpVersion;
+                //if (sSocket != null)
+                //{
+                //    try
+                //    {
+                //        Socket clientSocket = sSocket.Accept();
+                //        int recv = 0;
+                //        while (true)
+                //        {
+                //            try
+                //            {
+                //                byte[] dataSize = RecerveVarData(clientSocket);
+                //                if (recv < 0)
+                //                {
+                //                    break;
+                //                }
+                //                else
+                //                {
+                //                    byte[] dec;
+                //                    ALawDecoder.ALawDecode(dataSize, dataSize.Length, out dec);
+                //                    var da = DataAvailable;
+                //                    if (da != null)
+                //                    {
+                //                        if (_sampleChannel != null)
+                //                        {
+                //                            _waveProvider.AddSamples(dec, 0, dec.Length);
 
-                            Byte[] bReceive = new Byte[1024];
-                            mySocket.Receive(bReceive);
-                            sBuffer = Encoding.ASCII.GetString(bReceive);
+                //                            var sampleBuffer = new float[dec.Length];
+                //                            int read = _sampleChannel.Read(sampleBuffer, 0, dec.Length);
 
-                            if (sBuffer.Substring(0, 4) == "TALK")
-                            {
-                                var socket = mySocket;
-                                var feed = new Thread(p => AudioIn(socket));
-                                _socketindex++;
-                                feed.Start();
-                                continue;
-                            }
-
-                            if (sBuffer.Substring(0, 3) != "GET")
-                            {
-                                continue;
-                            }
+                //                            da(this, new DataAvailableEventArgs((byte[])dec.Clone(), read));
 
 
-                            int iStartPos = sBuffer.IndexOf("HTTP", 1, StringComparison.Ordinal);
+                //                            if (Listening)
+                //                            {
+                //                                WaveOutProvider?.AddSamples(dec, 0, read);
+                //                            }
 
-                            sHttpVersion = sBuffer.Substring(iStartPos, 8);
-
-
-                            int cid = -1, vid = -1, camid = -1;
-                            int w = -1, h = -1;
-
-                            string qs = sBuffer.Substring(4);
-                            qs = qs.Substring(0, qs.IndexOf(" ", StringComparison.Ordinal)).Trim('/').Trim('?');
-                            string[] nvs = qs.Split('&');
-
-                            foreach (string s in nvs)
-                            {
-                                string[] nv = s.Split('=');
-                                switch (nv[0].ToLower())
-                                {
-                                    case "c":
-                                        cid = Convert.ToInt32(nv[1]);
-                                        break;
-                                    case "w":
-                                        w = Convert.ToInt32(nv[1]);
-                                        break;
-                                    case "h":
-                                        h = Convert.ToInt32(nv[1]);
-                                        break;
-                                    case "camid":
-                                        camid = Convert.ToInt32(nv[1]); //mjpeg
-                                        break;
-                                    case "micid":
-                                        vid = Convert.ToInt32(nv[1]);
-                                        break;
-
-                                }
-                            }
-                            //if (vid != -1)
-                            //{
-                                VolumeLevel vl = Parent.OutVolumeLevel;
-                                if (vl != null)
-                                {
-                                    String sResponse = "";
-
-                                    sResponse += "HTTP/1.1 200 OK\r\n";
-                                    sResponse += "Server: iSpy\r\n";
-                                    sResponse += "Expires: 0\r\n";
-                                    sResponse += "Pragma: no-cache\r\n";
-                                    sResponse += "Content-Type: multipart/x-mixed-replace;boundary=--myboundary";
-                                    sResponse += "\r\n\r\n";
-                                    Byte[] bSendData = Encoding.ASCII.GetBytes(sResponse);
-                                    SendToBrowser(bSendData, mySocket);
-                                    vl.OutSockets.Add(mySocket);
-
-                                    _socketindex++;
-                                    continue;
-                                }
-                            //}
-                            //else
-                            //{
-                            //    const string resp = "iSpy server is running";
-                            //    SendHeader(sHttpVersion, "", resp.Length, " 200 OK", 0, ref mySocket);
-                            //    SendToBrowser(resp, ref mySocket);
-                            //}
-                             
-                            //String sResponse = "";
-                            //sResponse += "HTTP/1.1 200 OK\r\n";
-                            //sResponse += "Server: iSpy\r\n";
-                            //sResponse += "Expires: 0\r\n";
-                            //sResponse += "Pragma: no-cache\r\n";
-                            //sResponse += "Content-Type: multipart/x-mixed-replace;boundary=--myboundary";
-                            //sResponse += "<html>Hello</html>";
-                            //sResponse += "\r\n\r\n";
-                            //mySocket.Send(Encoding.ASCII.GetBytes(sResponse));
-                            //mySocket.Send(Encoding.ASCII.GetBytes("Hello"));
-                        }
-                        catch (Exception)
-                        {
-
-                        }
-                        finally
-                        {
-                            mySocket.Close();
-                            mySocket = null;
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    System.Diagnostics.Debug.WriteLine("" + e.Message);
-                }
+                //                        }
+                //                    }
+                //                }
+                //            }
+                //            catch (SocketException se)
+                //            {
+                //                sSocket.Close();
+                //                sSocket = null;
+                //            }
+                //        }
+                //        clientSocket.Close();
+                //    }
+                //    catch (Exception e)
+                //    {
+                //        System.Diagnostics.Debug.WriteLine("" + e.Message);
+                //    }
+                //}
             }
         }
 
@@ -224,19 +189,6 @@ namespace AudioClientBeta
             }
 
             Application.DoEvents();
-            if (myListener != null)
-            {
-                try
-                {
-                    myListener.Stop();
-                    myListener = null;
-                }
-                catch (Exception)
-                {
-
-                }
-            }
-            Application.DoEvents();
             if (th != null)
             {
                 try
@@ -255,6 +207,76 @@ namespace AudioClientBeta
                 Application.DoEvents();
                 th = null;
             }
+        }
+
+        public void Create(Socket client)
+        {
+            int recv = 0;
+            while (true)
+            {
+                try
+                {
+                    byte[] dataSize = RecerveVarData(client);
+                    if (recv < 0)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        byte[] dec;
+                        //ALawDecoder.ALawDecode(data, recbytesize, out dec);
+                        //var da = DataAvailable;
+                        //if (da != null)
+                        //{
+                        //    if (_sampleChannel != null)
+                        //    {
+                        //        _waveProvider.AddSamples(dec, 0, dec.Length);
+
+                        //        var sampleBuffer = new float[dec.Length];
+                        //        int read = _sampleChannel.Read(sampleBuffer, 0, dec.Length);
+
+                        //        da(this, new DataAvailableEventArgs((byte[])dec.Clone(), read));
+
+
+                        //        if (Listening)
+                        //        {
+                        //            WaveOutProvider?.AddSamples(dec, 0, read);
+                        //        }
+
+                        //    }
+                        //}
+                    }
+                }
+                catch (SocketException se)
+                {
+                    sSocket.Close();
+                    sSocket = null;
+                }
+            }
+            client.Close();
+        }
+
+        public byte[] RecerveVarData(Socket s)
+        {
+            int total = 0;
+            int recv;
+            byte[] datasize = new byte[4];
+            recv = s.Receive(datasize, 0, 4, SocketFlags.None);
+            int size = BitConverter.ToInt32(datasize, 0);
+            int dataleft = size;
+            byte[] data = new byte[size];
+            while (total < size)
+            {
+                recv = s.Receive(data, total, dataleft, SocketFlags.None);
+                if (recv == 0)
+                {
+                    data = null;
+                    break;
+                }
+                total += recv;
+                dataleft -= recv;
+            }
+            return data;
         }
 
         private void AudioIn(Socket mySocket)

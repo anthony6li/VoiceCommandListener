@@ -6,11 +6,13 @@ using System.Windows.Forms;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using g711audio;
+using System.Net.Sockets;
 
 namespace AudioClientBeta.Sources.Audio.streams
 {
     class iSpyServerStream: IAudioSource, IDisposable
     {
+        private static Socket sSocket;
         private string _source;
         private float _gain;
         private bool _listening;
@@ -165,12 +167,17 @@ namespace AudioClientBeta.Sources.Audio.streams
         public void Start()
         {
             if (IsRunning) return;
-            // check source
-            if (string.IsNullOrEmpty(_source))
-                throw new ArgumentException("Audio source is not specified.");
 
             lock (_lock)
             {
+
+                IPAddress ip = IPAddress.Parse("192.168.198.1");
+                int port = 8092;
+                sSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                sSocket.Bind(new IPEndPoint(ip, port));
+                sSocket.Listen(10);
+
+
                 _waveProvider = new BufferedWaveProvider(RecordingFormat);
                 _sampleChannel = new SampleChannel(_waveProvider);
                 _sampleChannel.Volume = 0.00f;
@@ -179,8 +186,9 @@ namespace AudioClientBeta.Sources.Audio.streams
                 _stopEvent = new ManualResetEvent(false);
                 _thread = new Thread(SpyServerListener)
                           {
-                              Name = "iSpyServer Audio Receiver (" + _source + ")"
+                              Name = "iSpyServer Audio Receiver"
                           };
+                _thread.IsBackground = true;
                 _thread.Start();
             }
         }
@@ -193,6 +201,64 @@ namespace AudioClientBeta.Sources.Audio.streams
 
         private void SpyServerListener()
         {
+            while (true)
+            {
+                if (sSocket != null)
+                {
+                    try
+                    {
+                        Socket clientSocket = sSocket.Accept();
+                        int recv = 0;
+                        while (true)
+                        {
+                            try
+                            {
+                                byte[] dataSize = RecerveVarData(clientSocket);
+                                if (recv < 0)
+                                {
+                                    break;
+                                }
+                                else
+                                {
+                                    byte[] dec;
+                                    ALawDecoder.ALawDecode(dataSize, dataSize.Length, out dec);
+                                    var da = DataAvailable;
+                                    if (da != null)
+                                    {
+                                        if (_sampleChannel != null)
+                                        {
+                                            _waveProvider.AddSamples(dec, 0, dec.Length);
+
+                                            var sampleBuffer = new float[dec.Length];
+                                            int read = _sampleChannel.Read(sampleBuffer, 0, dec.Length);
+
+                                            da(this, new DataAvailableEventArgs((byte[])dec.Clone(), read));
+
+
+                                            if (Listening)
+                                            {
+                                                WaveOutProvider?.AddSamples(dec, 0, read);
+                                            }
+
+                                        }
+                                    }
+                                }
+                            }
+                            catch (SocketException se)
+                            {
+                                sSocket.Close();
+                                sSocket = null;
+                            }
+                        }
+                        clientSocket.Close();
+                    }
+                    catch (Exception e)
+                    {
+                        System.Diagnostics.Debug.WriteLine("" + e.Message);
+                    }
+                }
+            }
+
             var data = new byte[3200];
             try
             {
@@ -267,6 +333,30 @@ namespace AudioClientBeta.Sources.Audio.streams
             if (WaveOutProvider?.BufferedBytes > 0) WaveOutProvider?.ClearBuffer();
         }
 
+
+
+        public byte[] RecerveVarData(Socket s)
+        {
+            int total = 0;
+            int recv;
+            byte[] datasize = new byte[4];
+            recv = s.Receive(datasize, 0, 4, SocketFlags.None);
+            int size = BitConverter.ToInt32(datasize, 0);
+            int dataleft = size;
+            byte[] data = new byte[size];
+            while (total < size)
+            {
+                recv = s.Receive(data, total, dataleft, SocketFlags.None);
+                if (recv == 0)
+                {
+                    data = null;
+                    break;
+                }
+                total += recv;
+                dataleft -= recv;
+            }
+            return data;
+        }
         public void WaitForStop()
         {
             if (!IsRunning) return;
