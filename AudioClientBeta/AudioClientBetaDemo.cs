@@ -40,12 +40,6 @@ namespace AudioClientBeta
             }
         }
 
-        Stopwatch sw;
-        TimeSpan ts;
-        private Timer speakTime;
-        private delegate void SetLBTime(string value);
-
-
         public AudioClientBetaDemo(string[] args)
         {
             arguments = args;
@@ -148,10 +142,6 @@ namespace AudioClientBeta
                 OutVolumeLevel = new VolumeLevel(Mic,this);
                 OutVolumeLevel.Listening = true;
                 OutVolumeLevel.Enable();
-
-                sw = new Stopwatch();
-                speakTime = new Timer(1000);
-                speakTime.AutoReset = true;
             }
             catch (Exception ex)
             {
