@@ -58,7 +58,6 @@
     <Compile Include="Delegates.cs" />
     <Compile Include="Events.cs" />
     <Compile Include="g711audio.cs" />
-    <Compile Include="iSpyServer.cs" />
     <Compile Include="objects.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -18,7 +18,6 @@ namespace AudioClientBeta
         bool beginMove = false;
         int currentXPosition;
         int currentYPosition;
-        internal static iSpyServer MWS;
         public VolumeLevel OutVolumeLevel;
         private static Socket sSocket;
 
@@ -49,7 +48,7 @@ namespace AudioClientBeta
             arguments = args;
             InitializeComponent();
         }
-        
+
 
         private objectsMicrophone AddMicrophone()
         {
@@ -136,10 +135,6 @@ namespace AudioClientBeta
                 {
                     ddlDevice.Add(WaveIn.GetCapabilities(n).ProductName);
                 }
-                //MWS = new iSpyServer(this);
-                //MWS.Listening = true;
-                //MWS.RecordingFormat = new WaveFormat(8000, 16, 1);
-                //MWS.StartServer();
                 OutVolumeLevel = new VolumeLevel(Mic);
                 OutVolumeLevel.Listening = true;
                 OutVolumeLevel.Enable();
@@ -158,13 +153,13 @@ namespace AudioClientBeta
         }
 
 
-        
+
 
         #region 计时器功能   
         private void SpeakTime_Elapsed(object sender, ElapsedEventArgs e)
         {
             ts = sw.Elapsed;
-            SetLB(string.Format("{0}:{1}:{2}",ts.Hours.ToString("00"),ts.Minutes.ToString("00"), ts.Seconds.ToString("00")));
+            SetLB(string.Format("{0}:{1}:{2}", ts.Hours.ToString("00"), ts.Minutes.ToString("00"), ts.Seconds.ToString("00")));
         }
 
         private void SetLB(string value)
@@ -176,7 +171,6 @@ namespace AudioClientBeta
             else
             {
                 this.lb_Time.Text = value;
-                richTextBox1.Text += value;
             }
         }
         #endregion
@@ -229,8 +223,11 @@ namespace AudioClientBeta
 
         private void AudioClientBetaDemo_FormClosing(object sender, FormClosingEventArgs e)
         {
-            sSocket.Close();
-            sSocket = null;
+            if (sSocket != null)
+            {
+                sSocket.Close();
+                sSocket = null;
+            }
             //MWS.StopServer();
         }
     }

@@ -171,10 +171,9 @@ namespace AudioClientBeta.Sources.Audio.streams
             lock (_lock)
             {
 
-                IPAddress ip = IPAddress.Parse("192.168.198.1");
                 int port = 8092;
                 sSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                sSocket.Bind(new IPEndPoint(ip, port));
+                sSocket.Bind(new IPEndPoint(IPAddress.Any, port));
                 sSocket.Listen(10);
 
 
@@ -208,13 +207,12 @@ namespace AudioClientBeta.Sources.Audio.streams
                     try
                     {
                         Socket clientSocket = sSocket.Accept();
-                        int recv = 0;
                         while (true)
                         {
                             try
                             {
                                 byte[] dataSize = RecerveVarData(clientSocket);
-                                if (recv < 0)
+                                if (dataSize.Length <= 0)
                                 {
                                     break;
                                 }

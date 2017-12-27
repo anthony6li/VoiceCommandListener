@@ -32,7 +32,6 @@
             this.btn_closeForm = new System.Windows.Forms.Button();
             this.lb_Time = new System.Windows.Forms.Label();
             this.pl_CenterCircle = new System.Windows.Forms.Panel();
-            this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.pl_CenterCircle.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -85,14 +84,6 @@
             this.pl_CenterCircle.Size = new System.Drawing.Size(217, 212);
             this.pl_CenterCircle.TabIndex = 4;
             // 
-            // richTextBox1
-            // 
-            this.richTextBox1.Location = new System.Drawing.Point(432, 37);
-            this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(190, 206);
-            this.richTextBox1.TabIndex = 5;
-            this.richTextBox1.Text = "";
-            // 
             // AudioClientBetaDemo
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -100,7 +91,6 @@
             this.BackgroundImage = global::AudioClientBeta.Properties.Resources.yhtfj_02;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.ClientSize = new System.Drawing.Size(634, 281);
-            this.Controls.Add(this.richTextBox1);
             this.Controls.Add(this.pl_CenterCircle);
             this.Controls.Add(this.btn_closeForm);
             this.Controls.Add(this.btn_min);
@@ -126,7 +116,6 @@
         private System.Windows.Forms.Button btn_closeForm;
         private System.Windows.Forms.Label lb_Time;
         private System.Windows.Forms.Panel pl_CenterCircle;
-        private System.Windows.Forms.RichTextBox richTextBox1;
     }
 }
 

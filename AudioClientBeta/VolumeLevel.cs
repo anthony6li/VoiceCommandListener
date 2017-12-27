@@ -88,12 +88,13 @@ namespace AudioClientBeta
                             AudioSource.Start();
                         }
                     }
+                    Listening = true;
+                    Micobject.settings.active = true;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                
             }
 
         }
