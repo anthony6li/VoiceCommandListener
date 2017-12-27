@@ -9,6 +9,7 @@ using NAudio;
 using NAudio.Wave;
 using AudioClientBeta.Sources;
 using System.Net.Sockets;
+using System.Diagnostics;
 
 namespace AudioClientBeta
 {
@@ -18,14 +19,15 @@ namespace AudioClientBeta
         public objectsMicrophone Micobject;
         public IWavePlayer WaveOut;
         public IAudioSource AudioSource;
+        public AudioClientBetaDemo Parent;
         public event Delegates.NewDataAvailable DataAvailable; public event EventHandler AudioDeviceEnabled, AudioDeviceDisabled, AudioDeviceReConnected;
 
-        public List<Socket> OutSockets = new List<Socket>();
 
 
-        public VolumeLevel(objectsMicrophone om)
+        public VolumeLevel(objectsMicrophone om, AudioClientBetaDemo parent)
         {
             Micobject = om;
+            Parent = parent;
         }
         public bool Listening
         {
@@ -64,7 +66,7 @@ namespace AudioClientBeta
         {
             try
             {
-                AudioSource = new iSpyServerStream(Micobject.settings.sourcename)
+                AudioSource = new iSpyServerStream(Micobject.settings.sourcename, Parent)
                 {
                     RecordingFormat = new WaveFormat(8000, 16, 1)
                 };

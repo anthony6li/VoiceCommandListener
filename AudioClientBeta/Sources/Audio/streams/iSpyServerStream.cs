@@ -7,11 +7,26 @@ using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using g711audio;
 using System.Net.Sockets;
+using System.Diagnostics;
+using Timer = System.Timers.Timer;
+using System.Timers;
+using System.Runtime.InteropServices;
 
 namespace AudioClientBeta.Sources.Audio.streams
 {
     class iSpyServerStream: IAudioSource, IDisposable
     {
+
+        [DllImport("user32.dll", EntryPoint = "SetForegroundWindow")]
+        public static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        Stopwatch sw;
+        TimeSpan ts;
+        private Timer speakTime;
+        private delegate void SetLBTime(string value);
+        private delegate void SetFormMin(bool setMin);
+        public AudioClientBetaDemo MainForm;
+
         private static Socket sSocket;
         private string _source;
         private float _gain;
@@ -147,9 +162,10 @@ namespace AudioClientBeta.Sources.Audio.streams
         /// 
         /// <param name="source">source, which provides audio data.</param>
         /// 
-        public iSpyServerStream(string source)
+        public iSpyServerStream(string source, AudioClientBetaDemo parent)
         {
             _source = source;
+            MainForm = parent;
         }
 
         private readonly object _lock = new object();
@@ -168,14 +184,16 @@ namespace AudioClientBeta.Sources.Audio.streams
         {
             if (IsRunning) return;
 
+            sw = new Stopwatch();
+            speakTime = new Timer(1000);
+            speakTime.AutoReset = true;
+
             lock (_lock)
             {
-
                 int port = 8092;
                 sSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 sSocket.Bind(new IPEndPoint(IPAddress.Any, port));
                 sSocket.Listen(10);
-
 
                 _waveProvider = new BufferedWaveProvider(RecordingFormat);
                 _sampleChannel = new SampleChannel(_waveProvider);
@@ -197,7 +215,6 @@ namespace AudioClientBeta.Sources.Audio.streams
             LevelChanged?.Invoke(this, new LevelChangedEventArgs(e.MaxSampleValues));
         }
 
-
         private void SpyServerListener()
         {
             while (true)
@@ -207,6 +224,12 @@ namespace AudioClientBeta.Sources.Audio.streams
                     try
                     {
                         Socket clientSocket = sSocket.Accept();
+                        //获得请求后，开启计时器，显示指挥时间。
+                        speakTime.Elapsed += SpeakTime_Elapsed;
+                        sw.Start();
+                        speakTime.Start();
+                        SetForm(false);
+                        //计时器开启后，开始接收数据并播放。
                         while (true)
                         {
                             try
@@ -214,6 +237,17 @@ namespace AudioClientBeta.Sources.Audio.streams
                                 byte[] dataSize = RecerveVarData(clientSocket);
                                 if (dataSize.Length <= 0)
                                 {
+                                    speakTime.Stop();
+                                    sw.Stop();
+                                    sw.Reset();
+                                    SetLB(string.Format("00:00:00"));
+                                    SetForm(true);
+                                    if (clientSocket != null)
+                                    {
+                                        //接收不到语音流，关闭套接字
+                                        clientSocket.Close();
+                                        clientSocket = null;
+                                    }
                                     break;
                                 }
                                 else
@@ -248,76 +282,65 @@ namespace AudioClientBeta.Sources.Audio.streams
                                 sSocket = null;
                             }
                         }
-                        clientSocket.Close();
                     }
                     catch (Exception e)
                     {
-                        System.Diagnostics.Debug.WriteLine("" + e.Message);
+                        Debug.WriteLine(e.Message);
                     }
                 }
             }
 
-            var data = new byte[3200];
-            try
-            {
-                var request = (HttpWebRequest)WebRequest.Create(_source);
-                request.Timeout = 10000;
-                request.ReadWriteTimeout = 5000;
-                var response = request.GetResponse();
-                using (Stream stream = response.GetResponseStream())
-                {
-                    if (stream == null)
-                        throw new Exception("Stream is null");
-                    
-                    stream.ReadTimeout = 5000;
-                    while (!_stopEvent.WaitOne(0, false))
-                    {
-                        
-                            int recbytesize = stream.Read(data, 0, 3200);
-                            if (recbytesize == 0)
-                                throw new Exception("lost stream");
-
-                            byte[] dec;
-                            ALawDecoder.ALawDecode(data, recbytesize, out dec);
-                        var da = DataAvailable;
-                        if (da != null)
-                        {
-                            if (_sampleChannel != null)
-                            {
-                                _waveProvider.AddSamples(dec, 0, dec.Length);
-
-                                var sampleBuffer = new float[dec.Length];
-                                int read = _sampleChannel.Read(sampleBuffer, 0, dec.Length);
-
-                                da(this, new DataAvailableEventArgs((byte[])dec.Clone(), read));
-
-                                if (Listening)
-                                {
-                                    WaveOutProvider?.AddSamples(dec, 0, read);
-                                }
-                                
-                            }
-                        }
-                        else
-                        {
-                            break;
-                        }
-                        // need to stop ?
-                        if (_stopEvent.WaitOne(0, false))
-                            break;
-                    }
-                    
-                }
-
-                AudioFinished?.Invoke(this, new PlayingFinishedEventArgs(ReasonToFinishPlaying.StoppedByUser));
-            }
-            catch (Exception e)
-            {
-                var af = AudioFinished;
-                af?.Invoke(this, new PlayingFinishedEventArgs(ReasonToFinishPlaying.DeviceLost));
-
-                //Logger.LogExceptionToFile(e,"ispyServer");
-            }
+            //var data = new byte[3200];
+            //try
+            //{
+            //    var request = (HttpWebRequest)WebRequest.Create(_source);
+            //    request.Timeout = 10000;
+            //    request.ReadWriteTimeout = 5000;
+            //    var response = request.GetResponse();
+            //    using (Stream stream = response.GetResponseStream())
+            //    {
+            //        if (stream == null)
+            //            throw new Exception("Stream is null");
+            //        stream.ReadTimeout = 5000;
+            //        while (!_stopEvent.WaitOne(0, false))
+            //        {
+            //                int recbytesize = stream.Read(data, 0, 3200);
+            //                if (recbytesize == 0)
+            //                    throw new Exception("lost stream");
+            //                byte[] dec;
+            //                ALawDecoder.ALawDecode(data, recbytesize, out dec);
+            //            var da = DataAvailable;
+            //            if (da != null)
+            //            {
+            //                if (_sampleChannel != null)
+            //                {
+            //                    _waveProvider.AddSamples(dec, 0, dec.Length);
+            //                    var sampleBuffer = new float[dec.Length];
+            //                    int read = _sampleChannel.Read(sampleBuffer, 0, dec.Length);
+            //                    da(this, new DataAvailableEventArgs((byte[])dec.Clone(), read));
+            //                    if (Listening)
+            //                    {
+            //                        WaveOutProvider?.AddSamples(dec, 0, read);
+            //                    }
+            //                }
+            //            }
+            //            else
+            //            {
+            //                break;
+            //            }
+            //            // need to stop ?
+            //            if (_stopEvent.WaitOne(0, false))
+            //                break;
+            //        }
+            //    }
+            //    AudioFinished?.Invoke(this, new PlayingFinishedEventArgs(ReasonToFinishPlaying.StoppedByUser));
+            //}
+            //catch (Exception e)
+            //{
+            //    var af = AudioFinished;
+            //    af?.Invoke(this, new PlayingFinishedEventArgs(ReasonToFinishPlaying.DeviceLost));
+            //    //Logger.LogExceptionToFile(e,"ispyServer");
+            //}
 
             if (_sampleChannel != null)
             {
@@ -331,7 +354,48 @@ namespace AudioClientBeta.Sources.Audio.streams
             if (WaveOutProvider?.BufferedBytes > 0) WaveOutProvider?.ClearBuffer();
         }
 
+        #region 计时器功能  
+        private void SpeakTime_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            ts = sw.Elapsed;
+            SetLB(string.Format("{0}:{1}:{2}", ts.Hours.ToString("00"), ts.Minutes.ToString("00"), ts.Seconds.ToString("00")));
+        }
 
+        private void SetLB(string value)
+        {
+            if (MainForm.InvokeRequired)
+            {
+                MainForm.Invoke(new SetLBTime(SetLB), value);
+            }
+            else
+            {
+                MainForm.lb_Time.Text = value;
+            }
+        }
+
+        private void SetForm(bool setMin)
+        {
+            if (MainForm.InvokeRequired)
+            {
+                MainForm.Invoke(new SetFormMin(SetForm), setMin);
+            }
+            else
+            {
+                if (setMin)
+                {
+                    MainForm.ShowInTaskbar = false;
+                    MainForm.WindowState = FormWindowState.Minimized;
+                }
+                else
+                {
+                    SetForegroundWindow(MainForm.Handle);
+                    MainForm.ShowInTaskbar = true;
+                    MainForm.WindowState = FormWindowState.Normal;
+                    MainForm.Show();
+                }
+            }
+        }
+        #endregion
 
         public byte[] RecerveVarData(Socket s)
         {
@@ -355,6 +419,7 @@ namespace AudioClientBeta.Sources.Audio.streams
             }
             return data;
         }
+
         public void WaitForStop()
         {
             if (!IsRunning) return;
@@ -386,7 +451,6 @@ namespace AudioClientBeta.Sources.Audio.streams
         {
             WaitForStop();
         }
-        
 
         public WaveFormat RecordingFormat { get; set; }
 

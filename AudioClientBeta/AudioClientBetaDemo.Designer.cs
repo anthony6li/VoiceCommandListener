@@ -28,10 +28,13 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AudioClientBetaDemo));
             this.btn_min = new System.Windows.Forms.Button();
             this.btn_closeForm = new System.Windows.Forms.Button();
             this.lb_Time = new System.Windows.Forms.Label();
             this.pl_CenterCircle = new System.Windows.Forms.Panel();
+            this.AudioNotify = new System.Windows.Forms.NotifyIcon(this.components);
             this.pl_CenterCircle.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -84,6 +87,14 @@
             this.pl_CenterCircle.Size = new System.Drawing.Size(217, 212);
             this.pl_CenterCircle.TabIndex = 4;
             // 
+            // AudioNotify
+            // 
+            this.AudioNotify.Icon = ((System.Drawing.Icon)(resources.GetObject("AudioNotify.Icon")));
+            this.AudioNotify.Text = "AudioClient";
+            this.AudioNotify.Visible = true;
+            this.AudioNotify.MouseClick += new System.Windows.Forms.MouseEventHandler(this.AudioNotify_MouseClick);
+            this.AudioNotify.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.AudioNotify_MouseClick);
+            // 
             // AudioClientBetaDemo
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -96,6 +107,8 @@
             this.Controls.Add(this.btn_min);
             this.DoubleBuffered = true;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.Name = "AudioClientBetaDemo";
             this.Text = "AudioClientDemo";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.AudioClientBetaDemo_FormClosing);
@@ -114,8 +127,9 @@
 
         private System.Windows.Forms.Button btn_min;
         private System.Windows.Forms.Button btn_closeForm;
-        private System.Windows.Forms.Label lb_Time;
+        public System.Windows.Forms.Label lb_Time;
         private System.Windows.Forms.Panel pl_CenterCircle;
+        private System.Windows.Forms.NotifyIcon AudioNotify;
     }
 }
 

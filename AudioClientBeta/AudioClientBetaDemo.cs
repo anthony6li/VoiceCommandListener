@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Drawing;
 
 namespace AudioClientBeta
 {
@@ -20,6 +21,7 @@ namespace AudioClientBeta
         int currentYPosition;
         public VolumeLevel OutVolumeLevel;
         private static Socket sSocket;
+
 
         public objectsMicrophone Mic;
         string[] arguments = null;
@@ -43,12 +45,18 @@ namespace AudioClientBeta
         private Timer speakTime;
         private delegate void SetLBTime(string value);
 
+
         public AudioClientBetaDemo(string[] args)
         {
             arguments = args;
+            //Form运行在屏幕右下角逻辑
+            int x = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Size.Width - this.Width*2 -35;
+            int y = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Size.Height - this.Height;
+            Point p = new Point(x, y);
+            this.PointToScreen(p);
+            this.Location = p;
             InitializeComponent();
         }
-
 
         private objectsMicrophone AddMicrophone()
         {
@@ -125,27 +133,25 @@ namespace AudioClientBeta
             return Mic;
         }
 
-
         private void Form1_Load(object sender, EventArgs e)
         {
             try
             {
+                AudioNotify.Visible = true;
+                this.ShowInTaskbar = false;
+                this.WindowState = FormWindowState.Minimized;
                 Mic = AddMicrophone();
                 for (int n = 0; n < WaveIn.DeviceCount; n++)
                 {
                     ddlDevice.Add(WaveIn.GetCapabilities(n).ProductName);
                 }
-                OutVolumeLevel = new VolumeLevel(Mic);
+                OutVolumeLevel = new VolumeLevel(Mic,this);
                 OutVolumeLevel.Listening = true;
                 OutVolumeLevel.Enable();
 
                 sw = new Stopwatch();
                 speakTime = new Timer(1000);
                 speakTime.AutoReset = true;
-                //string[] aa = arguments[0].Substring(arguments[0].IndexOf("//", StringComparison.Ordinal)).TrimEnd('”').Trim('/').Trim('"').Trim('?').Split('&');
-                //ip = aa[0].Split(':')[1];
-                //name = aa[1].Split(':')[1];
-                //name = HttpUtility.UrlDecode(name, Encoding.UTF8);
             }
             catch (Exception ex)
             {
@@ -153,32 +159,11 @@ namespace AudioClientBeta
         }
 
 
-
-
-        #region 计时器功能   
-        private void SpeakTime_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            ts = sw.Elapsed;
-            SetLB(string.Format("{0}:{1}:{2}", ts.Hours.ToString("00"), ts.Minutes.ToString("00"), ts.Seconds.ToString("00")));
-        }
-
-        private void SetLB(string value)
-        {
-            if (this.InvokeRequired)
-            {
-                this.Invoke(new SetLBTime(SetLB), value);
-            }
-            else
-            {
-                this.lb_Time.Text = value;
-            }
-        }
-        #endregion
-
         #region 窗体隐藏标题栏后的移动问题,最小化和关闭按钮
         private void btn_min_Click(object sender, EventArgs e)
         {
             this.WindowState = FormWindowState.Minimized;
+            this.ShowInTaskbar = false;
         }
 
         private void btn_closeForm_Click(object sender, EventArgs e)
@@ -228,7 +213,12 @@ namespace AudioClientBeta
                 sSocket.Close();
                 sSocket = null;
             }
-            //MWS.StopServer();
+        }
+
+        private void AudioNotify_MouseClick(object sender, MouseEventArgs e)
+        {
+            this.ShowInTaskbar = true;
+            this.WindowState = FormWindowState.Normal;
         }
     }
 }
