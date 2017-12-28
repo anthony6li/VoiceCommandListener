@@ -30,13 +30,8 @@ namespace AudioClientBeta
         string name = string.Empty;
         public List<string> ddlDevice = new List<string>();
 
-        Stopwatch sw;
-        private Timer speakTime;
-        private delegate void SetLBTime(string value);
-
         public AudioClientBetaDemo()
         {
-            //arguments = args;
             //Form运行在屏幕右下角逻辑
             int x = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Size.Width - this.Width*2 -35;
             int y = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Size.Height - this.Height;
@@ -137,10 +132,6 @@ namespace AudioClientBeta
                 OutVolumeLevel = new VolumeLevel(Mic,this);
                 OutVolumeLevel.Listening = true;
                 OutVolumeLevel.Enable();
-
-                sw = new Stopwatch();
-                speakTime = new Timer(1000);
-                speakTime.AutoReset = true;
                 Logger.Info("窗口加载完成。");
             }
             catch (Exception ex)
