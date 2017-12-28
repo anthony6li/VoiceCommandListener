@@ -11,44 +11,32 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Drawing;
+using System.Reflection;
+using Anthony.Logger;
 
 namespace AudioClientBeta
 {
     public partial class AudioClientBetaDemo : Form
     {
+        private static ARLogger Logger = ARLogger.GetInstance(MethodBase.GetCurrentMethod().DeclaringType);
         bool beginMove = false;
         int currentXPosition;
         int currentYPosition;
         public VolumeLevel OutVolumeLevel;
         private static Socket sSocket;
 
-
         public objectsMicrophone Mic;
-        string[] arguments = null;
         string ip = string.Empty;
         string name = string.Empty;
         public List<string> ddlDevice = new List<string>();
-        public string DeviceName
-        {
-            get
-            {
-                if (ddlDevice.Count > 0)
-                {
-                    return ddlDevice[0].ToString();
-                }
-                return "没有可输入的设备";
-            }
-        }
 
         Stopwatch sw;
-        TimeSpan ts;
         private Timer speakTime;
         private delegate void SetLBTime(string value);
 
-
-        public AudioClientBetaDemo(string[] args)
+        public AudioClientBetaDemo()
         {
-            arguments = args;
+            //arguments = args;
             //Form运行在屏幕右下角逻辑
             int x = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Size.Width - this.Width*2 -35;
             int y = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Size.Height - this.Height;
@@ -137,9 +125,10 @@ namespace AudioClientBeta
         {
             try
             {
-                AudioNotify.Visible = true;
-                this.ShowInTaskbar = false;
+                this.AudioNotify.Visible = true;
                 this.WindowState = FormWindowState.Minimized;
+                this.ShowInTaskbar = false;
+                this.Hide();
                 Mic = AddMicrophone();
                 for (int n = 0; n < WaveIn.DeviceCount; n++)
                 {
@@ -152,12 +141,22 @@ namespace AudioClientBeta
                 sw = new Stopwatch();
                 speakTime = new Timer(1000);
                 speakTime.AutoReset = true;
+                Logger.Info("窗口加载完成。");
             }
             catch (Exception ex)
             {
+                Logger.Info("窗口加载出现异常。"+ex.Message);
             }
         }
 
+        private void AudioClientBetaDemo_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (sSocket != null)
+            {
+                sSocket.Close();
+                sSocket = null;
+            }
+        }
 
         #region 窗体隐藏标题栏后的移动问题,最小化和关闭按钮
         private void btn_min_Click(object sender, EventArgs e)
@@ -206,19 +205,50 @@ namespace AudioClientBeta
         }
         #endregion
 
-        private void AudioClientBetaDemo_FormClosing(object sender, FormClosingEventArgs e)
+        #region 任务栏图标以及控制逻辑
+        private void AudioNotify_MouseClick(object sender, MouseEventArgs e)
         {
-            if (sSocket != null)
+            if (this.WindowState == FormWindowState.Normal)
             {
-                sSocket.Close();
-                sSocket = null;
+                this.WindowState = FormWindowState.Minimized;
+                this.ShowInTaskbar = false;
+                this.Hide();
+            }
+            else if (this.WindowState == FormWindowState.Minimized)
+            {
+                this.Show();
+                this.WindowState = FormWindowState.Normal;
+                this.ShowInTaskbar = true;
+                this.Activate();
             }
         }
 
-        private void AudioNotify_MouseClick(object sender, MouseEventArgs e)
+        private void tsMenuItem_ShowForm_Click(object sender, EventArgs e)
         {
+            this.Show();
             this.ShowInTaskbar = true;
             this.WindowState = FormWindowState.Normal;
+            this.Activate();
         }
+
+        private void tsMenuItem_HideForm_Click(object sender, EventArgs e)
+        {
+            this.WindowState = FormWindowState.Minimized;
+            this.ShowInTaskbar = false;
+            this.Hide();
+        }
+
+        private void tsMenuItem_CloseForm_Click(object sender, EventArgs e)
+        {
+            DialogResult result =  MessageBox.Show("你确定要退出程序吗？", "确认", MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+            if (result == DialogResult.OK)
+            {
+                this.AudioNotify.Visible = false;
+                this.Close();
+                this.Dispose();
+                Application.Exit();
+            }
+        }
+        #endregion
     }
 }

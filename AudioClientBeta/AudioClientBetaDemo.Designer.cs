@@ -35,7 +35,12 @@
             this.lb_Time = new System.Windows.Forms.Label();
             this.pl_CenterCircle = new System.Windows.Forms.Panel();
             this.AudioNotify = new System.Windows.Forms.NotifyIcon(this.components);
+            this.contextMenuStripForNofifyRight = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.tsMenuItem_ShowForm = new System.Windows.Forms.ToolStripMenuItem();
+            this.tsMenuItem_HideForm = new System.Windows.Forms.ToolStripMenuItem();
+            this.tsMenuItem_CloseForm = new System.Windows.Forms.ToolStripMenuItem();
             this.pl_CenterCircle.SuspendLayout();
+            this.contextMenuStripForNofifyRight.SuspendLayout();
             this.SuspendLayout();
             // 
             // btn_min
@@ -89,11 +94,41 @@
             // 
             // AudioNotify
             // 
+            this.AudioNotify.ContextMenuStrip = this.contextMenuStripForNofifyRight;
             this.AudioNotify.Icon = ((System.Drawing.Icon)(resources.GetObject("AudioNotify.Icon")));
-            this.AudioNotify.Text = "AudioClient";
+            this.AudioNotify.Text = "远程指挥语音接收程序";
             this.AudioNotify.Visible = true;
-            this.AudioNotify.MouseClick += new System.Windows.Forms.MouseEventHandler(this.AudioNotify_MouseClick);
             this.AudioNotify.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.AudioNotify_MouseClick);
+            // 
+            // contextMenuStripForNofifyRight
+            // 
+            this.contextMenuStripForNofifyRight.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.tsMenuItem_ShowForm,
+            this.tsMenuItem_HideForm,
+            this.tsMenuItem_CloseForm});
+            this.contextMenuStripForNofifyRight.Name = "contextMenuStripForNofifyRight";
+            this.contextMenuStripForNofifyRight.Size = new System.Drawing.Size(153, 92);
+            // 
+            // tsMenuItem_ShowForm
+            // 
+            this.tsMenuItem_ShowForm.Name = "tsMenuItem_ShowForm";
+            this.tsMenuItem_ShowForm.Size = new System.Drawing.Size(152, 22);
+            this.tsMenuItem_ShowForm.Text = "显示界面";
+            this.tsMenuItem_ShowForm.Click += new System.EventHandler(this.tsMenuItem_ShowForm_Click);
+            // 
+            // tsMenuItem_HideForm
+            // 
+            this.tsMenuItem_HideForm.Name = "tsMenuItem_HideForm";
+            this.tsMenuItem_HideForm.Size = new System.Drawing.Size(152, 22);
+            this.tsMenuItem_HideForm.Text = "隐藏界面";
+            this.tsMenuItem_HideForm.Click += new System.EventHandler(this.tsMenuItem_HideForm_Click);
+            // 
+            // tsMenuItem_CloseForm
+            // 
+            this.tsMenuItem_CloseForm.Name = "tsMenuItem_CloseForm";
+            this.tsMenuItem_CloseForm.Size = new System.Drawing.Size(152, 22);
+            this.tsMenuItem_CloseForm.Text = "退出程序";
+            this.tsMenuItem_CloseForm.Click += new System.EventHandler(this.tsMenuItem_CloseForm_Click);
             // 
             // AudioClientBetaDemo
             // 
@@ -102,15 +137,18 @@
             this.BackgroundImage = global::AudioClientBeta.Properties.Resources.yhtfj_02;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.ClientSize = new System.Drawing.Size(634, 281);
+            this.ControlBox = false;
             this.Controls.Add(this.pl_CenterCircle);
             this.Controls.Add(this.btn_closeForm);
             this.Controls.Add(this.btn_min);
             this.DoubleBuffered = true;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "AudioClientBetaDemo";
-            this.Text = "AudioClientDemo";
+            this.ShowInTaskbar = false;
+            this.WindowState = System.Windows.Forms.FormWindowState.Minimized;
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.AudioClientBetaDemo_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.AudioClientBetaDemo_MouseDown);
@@ -119,6 +157,7 @@
             this.MouseUp += new System.Windows.Forms.MouseEventHandler(this.AudioClientBetaDemo_MouseUp);
             this.pl_CenterCircle.ResumeLayout(false);
             this.pl_CenterCircle.PerformLayout();
+            this.contextMenuStripForNofifyRight.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -130,6 +169,10 @@
         public System.Windows.Forms.Label lb_Time;
         private System.Windows.Forms.Panel pl_CenterCircle;
         private System.Windows.Forms.NotifyIcon AudioNotify;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStripForNofifyRight;
+        private System.Windows.Forms.ToolStripMenuItem tsMenuItem_ShowForm;
+        private System.Windows.Forms.ToolStripMenuItem tsMenuItem_HideForm;
+        private System.Windows.Forms.ToolStripMenuItem tsMenuItem_CloseForm;
     }
 }
 

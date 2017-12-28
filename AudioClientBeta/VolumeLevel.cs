@@ -43,20 +43,14 @@ namespace AudioClientBeta
                 {
                     if (value && AudioSource != null)
                     {
-                        //(creates the waveoutprovider referenced below)
                         AudioSource.Listening = true;
-
                         WaveOut.Init(AudioSource.WaveOutProvider);
-                        //Setting volume not supported on DirectSoundOut, adjust the volume on your WaveProvider instead
-                        //WaveOut.Volume = 0;
                         WaveOut.Play();
-
                     }
                     else
                     {
                         if (AudioSource != null) AudioSource.Listening = false;
                         WaveOut.Stop();
-
                     }
                 }
             }

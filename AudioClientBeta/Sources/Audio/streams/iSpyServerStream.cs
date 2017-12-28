@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 
 namespace AudioClientBeta.Sources.Audio.streams
 {
-    class iSpyServerStream: IAudioSource, IDisposable
+    class iSpyServerStream : IAudioSource, IDisposable
     {
 
         [DllImport("user32.dll", EntryPoint = "SetForegroundWindow")]
@@ -128,14 +128,14 @@ namespace AudioClientBeta.Sources.Audio.streams
 
                 if (WaveOutProvider != null)
                 {
-                    if (WaveOutProvider.BufferedBytes>0) WaveOutProvider.ClearBuffer();
+                    if (WaveOutProvider.BufferedBytes > 0) WaveOutProvider.ClearBuffer();
                     WaveOutProvider = null;
                 }
                 if (value)
                 {
                     WaveOutProvider = new BufferedWaveProvider(RecordingFormat) { DiscardOnBufferOverflow = true, BufferDuration = TimeSpan.FromMilliseconds(500) };
                 }
-                
+
                 _listening = value;
             }
         }
@@ -148,7 +148,7 @@ namespace AudioClientBeta.Sources.Audio.streams
         /// <remarks>Current state of audio source object - running or not.</remarks>
         /// 
         public bool IsRunning => _thread != null && !_thread.Join(TimeSpan.Zero);
-        
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LocalDeviceStream"/> class.
@@ -182,7 +182,7 @@ namespace AudioClientBeta.Sources.Audio.streams
         /// 
         public void Start()
         {
-            if (IsRunning) return;
+            //if (IsRunning) return;
 
             sw = new Stopwatch();
             speakTime = new Timer(1000);
@@ -192,8 +192,23 @@ namespace AudioClientBeta.Sources.Audio.streams
             {
                 int port = 8092;
                 sSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                sSocket.Bind(new IPEndPoint(IPAddress.Any, port));
-                sSocket.Listen(10);
+                bool BindSucessful = false;
+                //端口会有一段时间无法释放，等待再连接。
+                while (!BindSucessful)
+                {
+                    try
+                    {
+                        sSocket.Bind(new IPEndPoint(IPAddress.Any, port));
+                        sSocket.Listen(200);
+                        BindSucessful = true;
+                    }
+                    catch (Exception)
+                    {
+                        Thread.Sleep(1000);
+                        sSocket.Bind(new IPEndPoint(IPAddress.Any, port));
+                        sSocket.Listen(200);
+                    }
+                }
 
                 _waveProvider = new BufferedWaveProvider(RecordingFormat);
                 _sampleChannel = new SampleChannel(_waveProvider);
@@ -202,9 +217,9 @@ namespace AudioClientBeta.Sources.Audio.streams
 
                 _stopEvent = new ManualResetEvent(false);
                 _thread = new Thread(SpyServerListener)
-                          {
-                              Name = "iSpyServer Audio Receiver"
-                          };
+                {
+                    Name = "iSpyServer Audio Receiver"
+                };
                 _thread.IsBackground = true;
                 _thread.Start();
             }
@@ -245,7 +260,9 @@ namespace AudioClientBeta.Sources.Audio.streams
                                     if (clientSocket != null)
                                     {
                                         //接收不到语音流，关闭套接字
+                                        clientSocket.Shutdown(SocketShutdown.Both);
                                         clientSocket.Close();
+                                        clientSocket.Dispose();
                                         clientSocket = null;
                                     }
                                     break;
@@ -278,15 +295,37 @@ namespace AudioClientBeta.Sources.Audio.streams
                             }
                             catch (SocketException se)
                             {
-                                sSocket.Close();
+                                //sSocket.Shutdown(SocketShutdown.Both);
+                                sSocket.Dispose();
                                 sSocket = null;
                             }
                         }
                     }
                     catch (Exception e)
                     {
-                        Debug.WriteLine(e.Message);
+                        if (sSocket != null)
+                        {
+                            //接收不到语音流，关闭套接字
+                            sSocket.Close();
+                            sSocket.Dispose();
+                            sSocket = null;
+                        }
                     }
+                }
+                else
+                {
+                    if (speakTime != null)
+                    {
+                        speakTime.Stop();
+                    }
+                    if (sw != null)
+                    {
+                        sw.Stop();
+                    }
+
+                    SetLB(string.Format("00:00:00"));
+                    SetForm(true);
+                    Start();
                 }
             }
 
@@ -385,10 +424,11 @@ namespace AudioClientBeta.Sources.Audio.streams
                 {
                     MainForm.ShowInTaskbar = false;
                     MainForm.WindowState = FormWindowState.Minimized;
+                    MainForm.FormBorderStyle = FormBorderStyle.None;
                 }
                 else
                 {
-                    SetForegroundWindow(MainForm.Handle);
+                    //SetForegroundWindow(MainForm.Handle);
                     MainForm.ShowInTaskbar = true;
                     MainForm.WindowState = FormWindowState.Normal;
                     MainForm.Show();

@@ -16,7 +16,7 @@ namespace AudioClientBeta
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new AudioClientBetaDemo(args));
+            Application.Run(new AudioClientBetaDemo());
         }
     }
 }
