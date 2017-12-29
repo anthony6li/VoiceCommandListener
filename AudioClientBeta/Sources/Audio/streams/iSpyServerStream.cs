@@ -11,14 +11,14 @@ using System.Diagnostics;
 using Timer = System.Timers.Timer;
 using System.Timers;
 using System.Runtime.InteropServices;
+using Anthony.Logger;
+using System.Reflection;
 
 namespace AudioClientBeta.Sources.Audio.streams
 {
     class iSpyServerStream : IAudioSource, IDisposable
     {
-
-        [DllImport("user32.dll", EntryPoint = "SetForegroundWindow")]
-        public static extern bool SetForegroundWindow(IntPtr hWnd);
+        private static ARLogger Logger = ARLogger.GetInstance(MethodBase.GetCurrentMethod().DeclaringType);
 
         Stopwatch sw;
         TimeSpan ts;
@@ -29,7 +29,6 @@ namespace AudioClientBeta.Sources.Audio.streams
 
         private static Socket sSocket;
         private string _source;
-        private float _gain;
         private bool _listening;
         private ManualResetEvent _stopEvent;
 
@@ -66,22 +65,13 @@ namespace AudioClientBeta.Sources.Audio.streams
         /// 
         public event LevelChangedEventHandler LevelChanged;
 
-        /// <summary>
-        /// audio source error event.
-        /// </summary>
-        /// 
-        /// <remarks>This event is used to notify clients about any type of errors occurred in
-        /// audio source object, for example internal exceptions.</remarks>
-        /// 
-        //public event AudioSourceErrorEventHandler AudioSourceError;
-
-        /// <summary>
-        /// audio playing finished event.
-        /// </summary>
-        /// 
-        /// <remarks><para>This event is used to notify clients that the audio playing has finished.</para>
-        /// </remarks>
-        /// 
+        ///// <summary>
+        ///// audio playing finished event.
+        ///// </summary>
+        ///// 
+        ///// <remarks><para>This event is used to notify clients that the audio playing has finished.</para>
+        ///// </remarks>
+        ///// 
         public event AudioFinishedEventHandler AudioFinished;
 
         /// <summary>
@@ -94,19 +84,6 @@ namespace AudioClientBeta.Sources.Audio.streams
         {
             get { return _source; }
             set { _source = value; }
-        }
-
-        public float Gain
-        {
-            get { return _gain; }
-            set
-            {
-                _gain = value;
-                if (_sampleChannel != null)
-                {
-                    _sampleChannel.Volume = value;
-                }
-            }
         }
 
         public bool Listening
@@ -183,7 +160,6 @@ namespace AudioClientBeta.Sources.Audio.streams
         public void Start()
         {
             //if (IsRunning) return;
-
             sw = new Stopwatch();
             speakTime = new Timer(1000);
             speakTime.AutoReset = true;
@@ -201,9 +177,11 @@ namespace AudioClientBeta.Sources.Audio.streams
                         sSocket.Bind(new IPEndPoint(IPAddress.Any, port));
                         sSocket.Listen(200);
                         BindSucessful = true;
+                        Logger.Info("Socket Bind and Listen Succesful!!");
                     }
-                    catch (Exception)
+                    catch (Exception es)
                     {
+                        Logger.Warn("Socket Bind error:"+es.Message);
                         Thread.Sleep(1000);
                         sSocket.Bind(new IPEndPoint(IPAddress.Any, port));
                         sSocket.Listen(200);
@@ -239,6 +217,7 @@ namespace AudioClientBeta.Sources.Audio.streams
                     try
                     {
                         Socket clientSocket = sSocket.Accept();
+                        Logger.Info(string.Format("来自【{0}】新的指挥请示已接入！开启计时器！", clientSocket.RemoteEndPoint.ToString()));
                         //获得请求后，开启计时器，显示指挥时间。
                         speakTime.Elapsed += SpeakTime_Elapsed;
                         sw.Start();
@@ -252,6 +231,7 @@ namespace AudioClientBeta.Sources.Audio.streams
                                 byte[] dataSize = RecerveVarData(clientSocket);
                                 if (dataSize.Length <= 0)
                                 {
+                                    Logger.Info("无语音流，指挥结束！！！");
                                     speakTime.Stop();
                                     sw.Stop();
                                     sw.Reset();
@@ -274,6 +254,7 @@ namespace AudioClientBeta.Sources.Audio.streams
                                     var da = DataAvailable;
                                     if (da != null)
                                     {
+                                        //Logger.Info("接受一段语音流，进入播放！！！");
                                         if (_sampleChannel != null)
                                         {
                                             _waveProvider.AddSamples(dec, 0, dec.Length);
@@ -282,7 +263,6 @@ namespace AudioClientBeta.Sources.Audio.streams
                                             int read = _sampleChannel.Read(sampleBuffer, 0, dec.Length);
 
                                             da(this, new DataAvailableEventArgs((byte[])dec.Clone(), read));
-
 
                                             if (Listening)
                                             {
@@ -296,6 +276,7 @@ namespace AudioClientBeta.Sources.Audio.streams
                             catch (SocketException se)
                             {
                                 //sSocket.Shutdown(SocketShutdown.Both);
+                                Logger.Error("通信出现异常，退出Socket. "+se.Message);
                                 sSocket.Dispose();
                                 sSocket = null;
                             }
@@ -305,6 +286,7 @@ namespace AudioClientBeta.Sources.Audio.streams
                     {
                         if (sSocket != null)
                         {
+                            Logger.Error("通信出现异常，关闭Socket. " + e.Message);
                             //接收不到语音流，关闭套接字
                             sSocket.Close();
                             sSocket.Dispose();
@@ -316,6 +298,7 @@ namespace AudioClientBeta.Sources.Audio.streams
                 {
                     if (speakTime != null)
                     {
+                        Logger.Error("指挥端通信结束，计时器停止。");
                         speakTime.Stop();
                     }
                     if (sw != null)
@@ -325,72 +308,11 @@ namespace AudioClientBeta.Sources.Audio.streams
 
                     SetLB(string.Format("00:00:00"));
                     SetForm(true);
+
+                    Logger.Info("ServerStream ReStart!!!");
                     Start();
                 }
             }
-
-            //var data = new byte[3200];
-            //try
-            //{
-            //    var request = (HttpWebRequest)WebRequest.Create(_source);
-            //    request.Timeout = 10000;
-            //    request.ReadWriteTimeout = 5000;
-            //    var response = request.GetResponse();
-            //    using (Stream stream = response.GetResponseStream())
-            //    {
-            //        if (stream == null)
-            //            throw new Exception("Stream is null");
-            //        stream.ReadTimeout = 5000;
-            //        while (!_stopEvent.WaitOne(0, false))
-            //        {
-            //                int recbytesize = stream.Read(data, 0, 3200);
-            //                if (recbytesize == 0)
-            //                    throw new Exception("lost stream");
-            //                byte[] dec;
-            //                ALawDecoder.ALawDecode(data, recbytesize, out dec);
-            //            var da = DataAvailable;
-            //            if (da != null)
-            //            {
-            //                if (_sampleChannel != null)
-            //                {
-            //                    _waveProvider.AddSamples(dec, 0, dec.Length);
-            //                    var sampleBuffer = new float[dec.Length];
-            //                    int read = _sampleChannel.Read(sampleBuffer, 0, dec.Length);
-            //                    da(this, new DataAvailableEventArgs((byte[])dec.Clone(), read));
-            //                    if (Listening)
-            //                    {
-            //                        WaveOutProvider?.AddSamples(dec, 0, read);
-            //                    }
-            //                }
-            //            }
-            //            else
-            //            {
-            //                break;
-            //            }
-            //            // need to stop ?
-            //            if (_stopEvent.WaitOne(0, false))
-            //                break;
-            //        }
-            //    }
-            //    AudioFinished?.Invoke(this, new PlayingFinishedEventArgs(ReasonToFinishPlaying.StoppedByUser));
-            //}
-            //catch (Exception e)
-            //{
-            //    var af = AudioFinished;
-            //    af?.Invoke(this, new PlayingFinishedEventArgs(ReasonToFinishPlaying.DeviceLost));
-            //    //Logger.LogExceptionToFile(e,"ispyServer");
-            //}
-
-            if (_sampleChannel != null)
-            {
-                _sampleChannel.PreVolumeMeter -= SampleChannelPreVolumeMeter;
-                _sampleChannel = null;
-            }
-
-            if (_waveProvider?.BufferedBytes > 0)
-                _waveProvider.ClearBuffer();
-
-            if (WaveOutProvider?.BufferedBytes > 0) WaveOutProvider?.ClearBuffer();
         }
 
         #region 计时器功能  
@@ -422,16 +344,20 @@ namespace AudioClientBeta.Sources.Audio.streams
             {
                 if (setMin)
                 {
-                    MainForm.ShowInTaskbar = false;
+                    Logger.Info("窗体最小化！");
+                    //MainForm.ShowInTaskbar = false;
                     MainForm.WindowState = FormWindowState.Minimized;
                     MainForm.FormBorderStyle = FormBorderStyle.None;
+                    MainForm.Hide();
                 }
                 else
                 {
+                    Logger.Info("窗体前置显示。");
                     //SetForegroundWindow(MainForm.Handle);
-                    MainForm.ShowInTaskbar = true;
-                    MainForm.WindowState = FormWindowState.Normal;
                     MainForm.Show();
+                    //MainForm.ShowInTaskbar = true;
+                    MainForm.WindowState = FormWindowState.Normal;
+                    MainForm.Activate();
                 }
             }
         }
@@ -460,26 +386,6 @@ namespace AudioClientBeta.Sources.Audio.streams
             return data;
         }
 
-        public void WaitForStop()
-        {
-            if (!IsRunning) return;
-            // wait for thread stop
-            _stopEvent.Set();
-
-            try
-            {
-                while (_thread != null && !_thread.Join(0))
-                    Application.DoEvents();
-            }
-            catch
-            {
-                // ignored
-            }
-
-            _stopEvent?.Close();
-            _stopEvent = null;
-        }
-
         /// <summary>
         /// Stop audio source.
         /// </summary>
@@ -489,32 +395,29 @@ namespace AudioClientBeta.Sources.Audio.streams
         /// 
         public void Stop()
         {
-            WaitForStop();
+            if (_thread != null)
+            {
+                _thread.Abort();
+            }
         }
 
         public WaveFormat RecordingFormat { get; set; }
 
         private bool _disposed;
-        // Public implementation of Dispose pattern callable by consumers. 
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        // Protected implementation of Dispose pattern. 
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed)
                 return;
-
             if (disposing)
             {
                 _stopEvent?.Close();
             }
-
-            // Free any unmanaged objects here. 
-            //
             _disposed = true;
         }
     }

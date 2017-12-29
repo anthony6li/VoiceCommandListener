@@ -39,10 +39,12 @@ namespace AudioClientBeta
             this.PointToScreen(p);
             this.Location = p;
             InitializeComponent();
+            Logger.Info("程序加载完毕。");
         }
 
         private objectsMicrophone AddMicrophone()
         {
+            Logger.Info("AddMicrophone 成功。");
             objectsMicrophone Mic = new objectsMicrophone
             {
                 alerts = new objectsMicrophoneAlerts(),
@@ -147,19 +149,26 @@ namespace AudioClientBeta
                 sSocket.Close();
                 sSocket = null;
             }
+            if (OutVolumeLevel != null)
+            {
+                OutVolumeLevel.Disable();
+            }
         }
 
         #region 窗体隐藏标题栏后的移动问题,最小化和关闭按钮
         private void btn_min_Click(object sender, EventArgs e)
         {
+            Logger.Info("点击了最小化按钮。");
             this.WindowState = FormWindowState.Minimized;
             this.ShowInTaskbar = false;
         }
 
         private void btn_closeForm_Click(object sender, EventArgs e)
         {
+            Logger.Info("点击了关闭按钮。");
             Application.Exit();
         }
+
         private void AudioClientBetaDemo_MouseDown(object sender, MouseEventArgs e)
         {
             //将鼠标坐标赋给窗体左上角坐标  
@@ -204,6 +213,7 @@ namespace AudioClientBeta
                 this.WindowState = FormWindowState.Minimized;
                 this.ShowInTaskbar = false;
                 this.Hide();
+                Logger.Info("响应任务栏图标双击事件，执行最小化逻辑。");
             }
             else if (this.WindowState == FormWindowState.Minimized)
             {
@@ -211,6 +221,7 @@ namespace AudioClientBeta
                 this.WindowState = FormWindowState.Normal;
                 this.ShowInTaskbar = true;
                 this.Activate();
+                Logger.Info("响应任务栏图标双击事件，执行前置显示逻辑。");
             }
         }
 
@@ -220,6 +231,7 @@ namespace AudioClientBeta
             this.ShowInTaskbar = true;
             this.WindowState = FormWindowState.Normal;
             this.Activate();
+            Logger.Info("执行任务栏右键菜单，显示窗体命令。");
         }
 
         private void tsMenuItem_HideForm_Click(object sender, EventArgs e)
@@ -227,16 +239,18 @@ namespace AudioClientBeta
             this.WindowState = FormWindowState.Minimized;
             this.ShowInTaskbar = false;
             this.Hide();
+            Logger.Info("执行任务栏右键菜单，隐藏窗体命令。");
         }
 
         private void tsMenuItem_CloseForm_Click(object sender, EventArgs e)
         {
+            Logger.Info("执行任务栏右键菜单，退出程序命令。");
             DialogResult result =  MessageBox.Show("你确定要退出程序吗？", "确认", MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
             if (result == DialogResult.OK)
             {
-                this.AudioNotify.Visible = false;
-                this.Close();
-                this.Dispose();
+                //this.AudioNotify.Visible = false;
+                //this.Close();
+                //this.Dispose();
                 Application.Exit();
             }
         }

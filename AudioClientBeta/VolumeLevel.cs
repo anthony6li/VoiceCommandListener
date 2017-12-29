@@ -10,11 +10,14 @@ using NAudio.Wave;
 using AudioClientBeta.Sources;
 using System.Net.Sockets;
 using System.Diagnostics;
+using Anthony.Logger;
+using System.Reflection;
 
 namespace AudioClientBeta
 {
     public class VolumeLevel
     {
+        private static ARLogger Logger = ARLogger.GetInstance(MethodBase.GetCurrentMethod().DeclaringType);
         private readonly object _lockobject = new object();
         public objectsMicrophone Micobject;
         public IWavePlayer WaveOut;
@@ -81,6 +84,7 @@ namespace AudioClientBeta
                     {
                         lock (_lockobject)
                         {
+                            Logger.Info("ServerStream start!!!");
                             AudioSource.Start();
                         }
                     }
@@ -90,12 +94,14 @@ namespace AudioClientBeta
             }
             catch (Exception ex)
             {
-                
+                Logger.Error("VolumeLevel.Enable error occured:" + ex.Message);
             }
 
         }
         public void AudioDeviceAudioFinished(object sender, PlayingFinishedEventArgs e)
         {
+            Logger.Info("AudioDeviceAudioFinished"+sender.ToString());
+            Logger.Info(e.ReasonToFinishPlaying.ToString());
         }
 
         public void AudioDeviceDataAvailable(object sender, DataAvailableEventArgs e)
@@ -104,8 +110,9 @@ namespace AudioClientBeta
             {
                 DataAvailable?.Invoke(this, new NewDataAvailableArgs((byte[])e.RawData.Clone()));
             }
-            catch (Exception)
+            catch (Exception ee)
             {
+                Logger.Error("AudioDeviceDataAvailable error occured:" + ee.Message);
             }
         }
 
@@ -133,6 +140,7 @@ namespace AudioClientBeta
             }
             catch (Exception ex)
             {
+                Logger.Error("VolumeLevel.Disable error occured:"+ex.Message);
             }
         }
     }
