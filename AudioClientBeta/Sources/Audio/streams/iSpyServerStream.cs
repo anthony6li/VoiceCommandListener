@@ -90,8 +90,7 @@ namespace AudioClientBeta.Sources.Audio.streams
         {
             get
             {
-                //if (IsRunning && _listening)
-                if (_listening)
+                if (IsRunning && _listening)
                     return true;
                 return false;
 
@@ -126,7 +125,6 @@ namespace AudioClientBeta.Sources.Audio.streams
         /// <remarks>Current state of audio source object - running or not.</remarks>
         /// 
         public bool IsRunning => _thread != null && !_thread.Join(TimeSpan.Zero);
-        //public bool IsRunning = true;
 
 
         /// <summary>
@@ -161,6 +159,7 @@ namespace AudioClientBeta.Sources.Audio.streams
         /// 
         public void Start()
         {
+            //if (IsRunning) return;
             sw = new Stopwatch();
             speakTime = new Timer(1000);
             speakTime.AutoReset = true;
@@ -169,29 +168,25 @@ namespace AudioClientBeta.Sources.Audio.streams
             {
                 int port = 8092;
                 sSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                //bool BindSucessful = false;
+                bool BindSucessful = false;
                 //端口会有一段时间无法释放，等待再连接。
-                //while (!BindSucessful)
-                //{
-                //    try
-                //    {
-                //        sSocket.Bind(new IPEndPoint(IPAddress.Any, port));
-                //        sSocket.Listen(200);
-                //        BindSucessful = true;
-                //        Logger.Info("Socket Bind and Listen Succesful!!");
-                //    }
-                //    catch (Exception es)
-                //    {
-                //        Logger.Warn("Socket Bind error:"+es.Message);
-                //        Thread.Sleep(1000);
-                //        sSocket.Bind(new IPEndPoint(IPAddress.Any, port));
-                //        sSocket.Listen(200);
-                //    }
-                //}
-
-                sSocket.Bind(new IPEndPoint(IPAddress.Any, port));
-                sSocket.Listen(200);
-                Logger.Info("Socket Bind and Listen Succesful!!");
+                while (!BindSucessful)
+                {
+                    try
+                    {
+                        sSocket.Bind(new IPEndPoint(IPAddress.Any, port));
+                        sSocket.Listen(200);
+                        BindSucessful = true;
+                        Logger.Info("Socket Bind and Listen Succesful!!");
+                    }
+                    catch (Exception es)
+                    {
+                        Logger.Warn("Socket Bind error:"+es.Message);
+                        Thread.Sleep(1000);
+                        sSocket.Bind(new IPEndPoint(IPAddress.Any, port));
+                        sSocket.Listen(200);
+                    }
+                }
 
                 _waveProvider = new BufferedWaveProvider(RecordingFormat);
                 _sampleChannel = new SampleChannel(_waveProvider);
@@ -199,13 +194,12 @@ namespace AudioClientBeta.Sources.Audio.streams
                 _sampleChannel.PreVolumeMeter += SampleChannelPreVolumeMeter;
 
                 _stopEvent = new ManualResetEvent(false);
-                sSocket.BeginAccept(new AsyncCallback(Accept), sSocket);
-                //_thread = new Thread(SpyServerListener)
-                //{
-                //    Name = "iSpyServer Audio Receiver"
-                //};
-                //_thread.IsBackground = true;
-                //_thread.Start();
+                _thread = new Thread(SpyServerListener)
+                {
+                    Name = "iSpyServer Audio Receiver"
+                };
+                _thread.IsBackground = true;
+                _thread.Start();
             }
         }
 
@@ -214,218 +208,112 @@ namespace AudioClientBeta.Sources.Audio.streams
             LevelChanged?.Invoke(this, new LevelChangedEventArgs(e.MaxSampleValues));
         }
 
-        private void Accept(IAsyncResult iar)
+        private void SpyServerListener()
         {
-            Socket ss = iar.AsyncState as Socket;
-            Socket clientSocket = ss.EndAccept(iar);
-            if (clientSocket != null)
+            while (true)
             {
-                try
+                if (sSocket != null)
                 {
-                    while (true)
+                    try
                     {
-                        try
+                        Socket clientSocket = sSocket.Accept();
+                        Logger.Info(string.Format("来自【{0}】新的指挥请示已接入！开启计时器！", clientSocket.RemoteEndPoint.ToString()));
+                        //获得请求后，开启计时器，显示指挥时间。
+                        speakTime.Elapsed += SpeakTime_Elapsed;
+                        sw.Start();
+                        speakTime.Start();
+                        SetForm(false);
+                        //计时器开启后，开始接收数据并播放。
+                        while (true)
                         {
-                            //Socket clientSocket = sSocket.Accept();
-                            Logger.Info(string.Format("来自【{0}】新的指挥请示已接入！开启计时器！", clientSocket.RemoteEndPoint.ToString()));
-                            //获得请求后，开启计时器，显示指挥时间。
-                            speakTime.Elapsed += SpeakTime_Elapsed;
-                            sw.Start();
-                            speakTime.Start();
-                            SetForm(false);
-                            //计时器开启后，开始接收数据并播放。
-                            byte[] dataSize = RecerveVarData(clientSocket);
-                            if (dataSize.Length <= 0)
+                            try
                             {
-                                Logger.Info("无语音流，指挥结束！！！");
-                                speakTime.Stop();
-                                sw.Stop();
-                                sw.Reset();
-                                SetLB(string.Format("00:00:00"));
-                                SetForm(true);
-                                if (clientSocket != null)
+                                byte[] dataSize = RecerveVarData(clientSocket);
+                                if (dataSize.Length <= 0)
                                 {
-                                    //接收不到语音流，关闭套接字
-                                    clientSocket.Shutdown(SocketShutdown.Both);
-                                    clientSocket.Close();
-                                    clientSocket.Dispose();
-                                    clientSocket = null;
-                                }
-                                break;
-                            }
-                            else
-                            {
-                                byte[] dec;
-                                ALawDecoder.ALawDecode(dataSize, dataSize.Length, out dec);
-                                var da = DataAvailable;
-                                if (da != null)
-                                {
-                                    //Logger.Info("接受一段语音流，进入播放！！！");
-                                    if (_sampleChannel != null)
+                                    Logger.Info("无语音流，指挥结束！！！");
+                                    speakTime.Stop();
+                                    sw.Stop();
+                                    sw.Reset();
+                                    SetLB(string.Format("00:00:00"));
+                                    SetForm(true);
+                                    if (clientSocket != null)
                                     {
-                                        _waveProvider.AddSamples(dec, 0, dec.Length);
-
-                                        var sampleBuffer = new float[dec.Length];
-                                        int read = _sampleChannel.Read(sampleBuffer, 0, dec.Length);
-
-                                        da(this, new DataAvailableEventArgs((byte[])dec.Clone(), read));
-
-                                        if (Listening)
+                                        //接收不到语音流，关闭套接字
+                                        clientSocket.Shutdown(SocketShutdown.Both);
+                                        clientSocket.Close();
+                                        clientSocket.Dispose();
+                                        clientSocket = null;
+                                    }
+                                    break;
+                                }
+                                else
+                                {
+                                    byte[] dec;
+                                    ALawDecoder.ALawDecode(dataSize, dataSize.Length, out dec);
+                                    var da = DataAvailable;
+                                    if (da != null)
+                                    {
+                                        //Logger.Info("接受一段语音流，进入播放！！！");
+                                        if (_sampleChannel != null)
                                         {
-                                            WaveOutProvider?.AddSamples(dec, 0, read);
-                                        }
+                                            _waveProvider.AddSamples(dec, 0, dec.Length);
 
+                                            var sampleBuffer = new float[dec.Length];
+                                            int read = _sampleChannel.Read(sampleBuffer, 0, dec.Length);
+
+                                            da(this, new DataAvailableEventArgs((byte[])dec.Clone(), read));
+
+                                            if (Listening)
+                                            {
+                                                WaveOutProvider?.AddSamples(dec, 0, read);
+                                            }
+
+                                        }
                                     }
                                 }
                             }
+                            catch (SocketException se)
+                            {
+                                //sSocket.Shutdown(SocketShutdown.Both);
+                                Logger.Error("通信出现异常，退出Socket. "+se.Message);
+                                sSocket.Dispose();
+                                sSocket = null;
+                            }
                         }
-                        catch (SocketException se)
+                    }
+                    catch (Exception e)
+                    {
+                        if (sSocket != null)
                         {
-                            //sSocket.Shutdown(SocketShutdown.Both);
-                            Logger.Error("通信出现异常，退出Socket. " + se.Message);
+                            Logger.Error("通信出现异常，关闭Socket. " + e.Message);
+                            //接收不到语音流，关闭套接字
+                            sSocket.Close();
                             sSocket.Dispose();
                             sSocket = null;
                         }
                     }
                 }
-                catch (Exception e)
+                else
                 {
-                    if (sSocket != null)
+                    if (speakTime != null)
                     {
-                        Logger.Error("通信出现异常，关闭Socket. " + e.Message);
-                        //接收不到语音流，关闭套接字
-                        sSocket.Close();
-                        sSocket.Dispose();
-                        sSocket = null;
+                        Logger.Error("指挥端通信结束，计时器停止。");
+                        speakTime.Stop();
                     }
-                }
-            }
-            else
-            {
-                if (speakTime != null)
-                {
-                    Logger.Error("指挥端通信结束，计时器停止。");
-                    speakTime.Stop();
-                }
-                if (sw != null)
-                {
-                    sw.Stop();
-                }
+                    if (sw != null)
+                    {
+                        sw.Stop();
+                    }
 
-                SetLB(string.Format("00:00:00"));
-                SetForm(true);
+                    SetLB(string.Format("00:00:00"));
+                    SetForm(true);
 
-                Logger.Info("ServerStream ReStart!!!");
-                Start();
+                    Logger.Info("ServerStream ReStart!!!");
+                    Start();
+                }
             }
         }
-
-        //private void SpyServerListener()
-        //{
-        //    while (true)
-        //    {
-        //        if (sSocket != null)
-        //        {
-        //            try
-        //            {
-        //                Socket clientSocket = sSocket.Accept();
-        //                Logger.Info(string.Format("来自【{0}】新的指挥请示已接入！开启计时器！", clientSocket.RemoteEndPoint.ToString()));
-        //                //获得请求后，开启计时器，显示指挥时间。
-        //                speakTime.Elapsed += SpeakTime_Elapsed;
-        //                sw.Start();
-        //                speakTime.Start();
-        //                SetForm(false);
-        //                //计时器开启后，开始接收数据并播放。
-        //                while (true)
-        //                {
-        //                    try
-        //                    {
-        //                        byte[] dataSize = RecerveVarData(clientSocket);
-        //                        if (dataSize.Length <= 0)
-        //                        {
-        //                            Logger.Info("无语音流，指挥结束！！！");
-        //                            speakTime.Stop();
-        //                            sw.Stop();
-        //                            sw.Reset();
-        //                            SetLB(string.Format("00:00:00"));
-        //                            SetForm(true);
-        //                            if (clientSocket != null)
-        //                            {
-        //                                //接收不到语音流，关闭套接字
-        //                                clientSocket.Shutdown(SocketShutdown.Both);
-        //                                clientSocket.Close();
-        //                                clientSocket.Dispose();
-        //                                clientSocket = null;
-        //                            }
-        //                            break;
-        //                        }
-        //                        else
-        //                        {
-        //                            byte[] dec;
-        //                            ALawDecoder.ALawDecode(dataSize, dataSize.Length, out dec);
-        //                            var da = DataAvailable;
-        //                            if (da != null)
-        //                            {
-        //                                //Logger.Info("接受一段语音流，进入播放！！！");
-        //                                if (_sampleChannel != null)
-        //                                {
-        //                                    _waveProvider.AddSamples(dec, 0, dec.Length);
-
-        //                                    var sampleBuffer = new float[dec.Length];
-        //                                    int read = _sampleChannel.Read(sampleBuffer, 0, dec.Length);
-
-        //                                    da(this, new DataAvailableEventArgs((byte[])dec.Clone(), read));
-
-        //                                    if (Listening)
-        //                                    {
-        //                                        WaveOutProvider?.AddSamples(dec, 0, read);
-        //                                    }
-
-        //                                }
-        //                            }
-        //                        }
-        //                    }
-        //                    catch (SocketException se)
-        //                    {
-        //                        //sSocket.Shutdown(SocketShutdown.Both);
-        //                        Logger.Error("通信出现异常，退出Socket. "+se.Message);
-        //                        sSocket.Dispose();
-        //                        sSocket = null;
-        //                    }
-        //                }
-        //            }
-        //            catch (Exception e)
-        //            {
-        //                if (sSocket != null)
-        //                {
-        //                    Logger.Error("通信出现异常，关闭Socket. " + e.Message);
-        //                    //接收不到语音流，关闭套接字
-        //                    sSocket.Close();
-        //                    sSocket.Dispose();
-        //                    sSocket = null;
-        //                }
-        //            }
-        //        }
-        //        else
-        //        {
-        //            if (speakTime != null)
-        //            {
-        //                Logger.Error("指挥端通信结束，计时器停止。");
-        //                speakTime.Stop();
-        //            }
-        //            if (sw != null)
-        //            {
-        //                sw.Stop();
-        //            }
-
-        //            SetLB(string.Format("00:00:00"));
-        //            SetForm(true);
-
-        //            Logger.Info("ServerStream ReStart!!!");
-        //            Start();
-        //        }
-        //    }
-        //}
 
         #region 计时器功能  
         private void SpeakTime_Elapsed(object sender, ElapsedEventArgs e)

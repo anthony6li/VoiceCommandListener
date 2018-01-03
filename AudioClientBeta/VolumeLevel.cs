@@ -80,7 +80,7 @@ namespace AudioClientBeta
 
                     AudioDeviceEnabled?.Invoke(this, EventArgs.Empty);
 
-                    //if (!AudioSource.IsRunning)
+                    if (!AudioSource.IsRunning)
                     {
                         lock (_lockobject)
                         {
