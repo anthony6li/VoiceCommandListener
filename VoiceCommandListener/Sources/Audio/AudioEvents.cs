@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AudioClientBeta.Sources.Audio
+namespace VoiceCommandListener.Sources.Audio
 {
     /// <summary>
     /// Delegate for new frame event handler.

@@ -1,5 +1,5 @@
 ﻿
-namespace AudioClientBeta
+namespace VoiceCommandListener
 {
     public class Delegates
     {
