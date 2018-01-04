@@ -1,19 +1,19 @@
-﻿using AudioClientBeta.Sources.Audio;
+﻿using VoiceCommandListener.Sources.Audio;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using AudioClientBeta.Sources.Audio.streams;
+using VoiceCommandListener.Sources.Audio.streams;
 using NAudio;
 using NAudio.Wave;
-using AudioClientBeta.Sources;
+using VoiceCommandListener.Sources;
 using System.Net.Sockets;
 using System.Diagnostics;
 using Anthony.Logger;
 using System.Reflection;
 
-namespace AudioClientBeta
+namespace VoiceCommandListener
 {
     public class VolumeLevel
     {
@@ -22,12 +22,12 @@ namespace AudioClientBeta
         public objectsMicrophone Micobject;
         public IWavePlayer WaveOut;
         public IAudioSource AudioSource;
-        public AudioClientBetaDemo Parent;
+        public FrmVoiceListener Parent;
         public event Delegates.NewDataAvailable DataAvailable; public event EventHandler AudioDeviceEnabled, AudioDeviceDisabled, AudioDeviceReConnected;
 
 
 
-        public VolumeLevel(objectsMicrophone om, AudioClientBetaDemo parent)
+        public VolumeLevel(objectsMicrophone om, FrmVoiceListener parent)
         {
             Micobject = om;
             Parent = parent;

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AudioClientBeta", "AudioClientBeta\AudioClientBeta.csproj", "{D6B1EB1D-0480-4341-AA81-B2001135F323}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoiceCommandListener", "VoiceCommandListener\VoiceCommandListener.csproj", "{D6B1EB1D-0480-4341-AA81-B2001135F323}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

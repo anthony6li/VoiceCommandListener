@@ -14,9 +14,9 @@ using System.Drawing;
 using System.Reflection;
 using Anthony.Logger;
 
-namespace AudioClientBeta
+namespace VoiceCommandListener
 {
-    public partial class AudioClientBetaDemo : Form
+    public partial class FrmVoiceListener : Form
     {
         private static ARLogger Logger = ARLogger.GetInstance(MethodBase.GetCurrentMethod().DeclaringType);
         bool beginMove = false;
@@ -30,7 +30,7 @@ namespace AudioClientBeta
         string name = string.Empty;
         public List<string> ddlDevice = new List<string>();
 
-        public AudioClientBetaDemo()
+        public FrmVoiceListener()
         {
             //Form运行在屏幕右下角逻辑
             int x = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Size.Width - this.Width*2 -35;
@@ -142,7 +142,7 @@ namespace AudioClientBeta
             }
         }
 
-        private void AudioClientBetaDemo_FormClosing(object sender, FormClosingEventArgs e)
+        private void VoiceCommandListenerDemo_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (sSocket != null)
             {
@@ -169,7 +169,7 @@ namespace AudioClientBeta
             Application.Exit();
         }
 
-        private void AudioClientBetaDemo_MouseDown(object sender, MouseEventArgs e)
+        private void VoiceCommandListenerDemo_MouseDown(object sender, MouseEventArgs e)
         {
             //将鼠标坐标赋给窗体左上角坐标  
             beginMove = true;
@@ -178,7 +178,7 @@ namespace AudioClientBeta
             this.Refresh();
         }
 
-        private void AudioClientBetaDemo_MouseLeave(object sender, EventArgs e)
+        private void VoiceCommandListenerDemo_MouseLeave(object sender, EventArgs e)
         {
             //设置初始状态  
             currentXPosition = 0;
@@ -186,7 +186,7 @@ namespace AudioClientBeta
             beginMove = false;
         }
 
-        private void AudioClientBetaDemo_MouseMove(object sender, MouseEventArgs e)
+        private void VoiceCommandListenerDemo_MouseMove(object sender, MouseEventArgs e)
         {
             if (beginMove)
             {
@@ -199,7 +199,7 @@ namespace AudioClientBeta
             }
         }
 
-        private void AudioClientBetaDemo_MouseUp(object sender, MouseEventArgs e)
+        private void VoiceCommandListenerDemo_MouseUp(object sender, MouseEventArgs e)
         {
             beginMove = false;
         }

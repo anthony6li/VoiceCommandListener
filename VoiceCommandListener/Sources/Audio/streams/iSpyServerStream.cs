@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 using Anthony.Logger;
 using System.Reflection;
 
-namespace AudioClientBeta.Sources.Audio.streams
+namespace VoiceCommandListener.Sources.Audio.streams
 {
     class iSpyServerStream : IAudioSource, IDisposable
     {
@@ -25,7 +25,7 @@ namespace AudioClientBeta.Sources.Audio.streams
         private Timer speakTime;
         private delegate void SetLBTime(string value);
         private delegate void SetFormMin(bool setMin);
-        public AudioClientBetaDemo MainForm;
+        public FrmVoiceListener MainForm;
 
         private static Socket sSocket;
         private string _source;
@@ -139,7 +139,7 @@ namespace AudioClientBeta.Sources.Audio.streams
         /// 
         /// <param name="source">source, which provides audio data.</param>
         /// 
-        public iSpyServerStream(string source, AudioClientBetaDemo parent)
+        public iSpyServerStream(string source, FrmVoiceListener parent)
         {
             _source = source;
             MainForm = parent;

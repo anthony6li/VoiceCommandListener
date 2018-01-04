@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Drawing;
 
-namespace AudioClientBeta
+namespace VoiceCommandListener
 {
     public class NewDataAvailableArgs : EventArgs
     {

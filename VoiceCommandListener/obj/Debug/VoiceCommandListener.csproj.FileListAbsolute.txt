@@ -1,0 +1,9 @@
+D:\GitHub\AudioClientBeta\bin\Debug\VoiceCommandListener.exe.config
+D:\GitHub\AudioClientBeta\bin\Debug\VoiceCommandListener.exe
+D:\GitHub\AudioClientBeta\bin\Debug\VoiceCommandListener.pdb
+D:\GitHub\AudioClientBeta\AudioClientBeta\obj\Debug\VoiceCommandListener.csprojResolveAssemblyReference.cache
+D:\GitHub\AudioClientBeta\AudioClientBeta\obj\Debug\VoiceCommandListener.FrmVoiceListener.resources
+D:\GitHub\AudioClientBeta\AudioClientBeta\obj\Debug\VoiceCommandListener.Properties.Resources.resources
+D:\GitHub\AudioClientBeta\AudioClientBeta\obj\Debug\VoiceCommandListener.csproj.GenerateResource.Cache
+D:\GitHub\AudioClientBeta\AudioClientBeta\obj\Debug\VoiceCommandListener.exe
+D:\GitHub\AudioClientBeta\AudioClientBeta\obj\Debug\VoiceCommandListener.pdb

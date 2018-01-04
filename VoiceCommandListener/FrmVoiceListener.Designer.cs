@@ -1,6 +1,6 @@
-﻿namespace AudioClientBeta
+﻿namespace VoiceCommandListener
 {
-    partial class AudioClientBetaDemo
+    partial class FrmVoiceListener
     {
         /// <summary>
         /// 必需的设计器变量。
@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AudioClientBetaDemo));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmVoiceListener));
             this.btn_min = new System.Windows.Forms.Button();
             this.btn_closeForm = new System.Windows.Forms.Button();
             this.lb_Time = new System.Windows.Forms.Label();
@@ -47,7 +47,7 @@
             // 
             this.btn_min.FlatAppearance.BorderSize = 0;
             this.btn_min.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btn_min.Image = global::AudioClientBeta.Properties.Resources.btn_min;
+            this.btn_min.Image = global::VoiceCommandListener.Properties.Resources.btn_min;
             this.btn_min.Location = new System.Drawing.Point(569, 1);
             this.btn_min.Name = "btn_min";
             this.btn_min.Size = new System.Drawing.Size(30, 30);
@@ -59,7 +59,7 @@
             // 
             this.btn_closeForm.FlatAppearance.BorderSize = 0;
             this.btn_closeForm.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btn_closeForm.Image = global::AudioClientBeta.Properties.Resources.btn_close;
+            this.btn_closeForm.Image = global::VoiceCommandListener.Properties.Resources.btn_close;
             this.btn_closeForm.Location = new System.Drawing.Point(605, 1);
             this.btn_closeForm.Name = "btn_closeForm";
             this.btn_closeForm.Size = new System.Drawing.Size(30, 30);
@@ -84,7 +84,7 @@
             // pl_CenterCircle
             // 
             this.pl_CenterCircle.BackColor = System.Drawing.Color.Transparent;
-            this.pl_CenterCircle.BackgroundImage = global::AudioClientBeta.Properties.Resources.jtjht_03;
+            this.pl_CenterCircle.BackgroundImage = global::VoiceCommandListener.Properties.Resources.jtjht_03;
             this.pl_CenterCircle.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.pl_CenterCircle.Controls.Add(this.lb_Time);
             this.pl_CenterCircle.Location = new System.Drawing.Point(209, 31);
@@ -130,11 +130,11 @@
             this.tsMenuItem_CloseForm.Text = "退出程序";
             this.tsMenuItem_CloseForm.Click += new System.EventHandler(this.tsMenuItem_CloseForm_Click);
             // 
-            // AudioClientBetaDemo
+            // VoiceCommandListenerDemo
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackgroundImage = global::AudioClientBeta.Properties.Resources.yhtfj_02;
+            this.BackgroundImage = global::VoiceCommandListener.Properties.Resources.yhtfj_02;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.ClientSize = new System.Drawing.Size(634, 281);
             this.ControlBox = false;
@@ -146,15 +146,15 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "AudioClientBetaDemo";
+            this.Name = "VoiceCommandListenerDemo";
             this.ShowInTaskbar = false;
             this.WindowState = System.Windows.Forms.FormWindowState.Minimized;
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.AudioClientBetaDemo_FormClosing);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.VoiceCommandListenerDemo_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
-            this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.AudioClientBetaDemo_MouseDown);
-            this.MouseLeave += new System.EventHandler(this.AudioClientBetaDemo_MouseLeave);
-            this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.AudioClientBetaDemo_MouseMove);
-            this.MouseUp += new System.Windows.Forms.MouseEventHandler(this.AudioClientBetaDemo_MouseUp);
+            this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.VoiceCommandListenerDemo_MouseDown);
+            this.MouseLeave += new System.EventHandler(this.VoiceCommandListenerDemo_MouseLeave);
+            this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.VoiceCommandListenerDemo_MouseMove);
+            this.MouseUp += new System.Windows.Forms.MouseEventHandler(this.VoiceCommandListenerDemo_MouseUp);
             this.pl_CenterCircle.ResumeLayout(false);
             this.pl_CenterCircle.PerformLayout();
             this.contextMenuStripForNofifyRight.ResumeLayout(false);
